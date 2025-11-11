@@ -1,0 +1,48 @@
+---
+// CTA Button with shimmer animation
+---
+
+<div class="flex justify-center py-12">
+  <button
+    id="cta-button"
+    class="cta-button px-12 py-4 md:px-16 md:py-5 rounded-full text-white text-lg md:text-xl lg:text-2xl font-semibold hover:scale-105 transition-transform cursor-pointer"
+    aria-label="Open contact form"
+  >
+    Play Now
+  </button>
+</div>
+
+<style>
+  .cta-button {
+    background: linear-gradient(
+      135deg,
+      #FF3851 0%,
+      #FF6B7A 25%,
+      #FFFFFF 50%,
+      #FF6B7A 75%,
+      #FF3851 100%
+    );
+    background-size: 200% auto;
+    animation: shimmer 3s linear infinite;
+    box-shadow: 0 20px 25px rgba(255, 56, 81, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-button:hover {
+    box-shadow: 0 25px 35px rgba(255, 56, 81, 0.4);
+  }
+
+  .cta-button:active {
+    transform: scale(0.98);
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% center;
+    }
+    100% {
+      background-position: -200% center;
+    }
+  }
+</style>

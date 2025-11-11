@@ -1,0 +1,42 @@
+---
+// Hero section with fixed-height banner and overlay content
+---
+
+<section class="bg-[#121212] pt-20 md:pt-24 pb-8">
+  <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Banner Container with Fixed Height -->
+    <div class="relative w-full h-[15.5625rem] md:h-[18rem] lg:h-[21rem] overflow-hidden rounded-3xl px-4 md:px-7 py-6 flex">
+      <!-- Background Image -->
+      <picture>
+        <img
+          src="/hero-bg.avif"
+          alt="Landing background"
+          fetchpriority="high"
+          decoding="async"
+          class="object-cover object-center z-0 absolute inset-0 w-full h-full"
+        />
+      </picture>
+
+      <!-- Overlay Content -->
+      <div class="relative z-10 flex flex-col items-start justify-between w-full">
+        <h1 class="text-[25px] sm:text-[30px] md:text-[45px] text-left text-[#000] font-medium max-w-full leading-[100%] md:-mb-3 mb-2">
+          <span class="text-[#000] block font-medium">More Than</span>
+          a Mystery!
+        </h1>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-2">
+          <button
+            id="cta-btn"
+            type="button"
+            class="shimmer transform active:scale-95 transition-transform duration-100 h-12 md:h-14 lg:h-16 cursor-pointer flex px-8 md:px-10 lg:px-12 items-center justify-center rounded-2xl font-bold hover:opacity-90 text-white text-lg md:text-xl lg:text-2xl shadow-xl"
+            aria-label="Play Now"
+          >
+            Play Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+

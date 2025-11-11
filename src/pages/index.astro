@@ -1,0 +1,24 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import BoxesGrid from '../components/BoxesGrid.astro';
+import ContactPopup from '../components/ContactPopup.astro';
+import AuthModal from '../components/AuthModal.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout
+  title="FortuneBox | Compete and Win Big with Mystery Boxes"
+  description="Join our Battles and compete with others to win Mystery Boxes in real-time. Exciting challenges and amazing rewards await!"
+>
+  <Header />
+  <Hero />
+  <BoxesGrid />
+  <ContactPopup />
+  <AuthModal />
+  <Footer />
+</Layout>
+
+<!-- Optimized client-side script for modal interactions -->
+<script src="../scripts/modal.ts"></script>

@@ -1,0 +1,81 @@
+---
+// Boxes Grid - Real scraped data from FortuneBox
+import { mysteryBoxes } from '../data/boxes';
+---
+
+<section class="w-full bg-[#121212] py-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Section Title -->
+    <div class="w-full pb-4 text-white flex text-left font-medium md:text-3xl text-2xl items-center">
+      <a
+        href="/boxes"
+        class="hover:opacity-70 active:scale-95 transition-transform duration-150 inline-block"
+        aria-label="View Mystery Boxes"
+      >
+        <span>Mystery Boxes</span>
+      </a>
+    </div>
+
+    <!-- Grid Container - 6 columns desktop, 2 columns mobile (Slotbox style) -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      {mysteryBoxes.map((box) => (
+        <div
+          class="group relative rounded-lg border-2 border-[#252525] bg-[#202020] hover:bg-[#282828] overflow-hidden transition-all hover:border-[#FF3851] cursor-pointer active:duration-150 active:scale-95"
+          data-box-card
+          data-box-slug={box.slug}
+          aria-label={box.name}
+        >
+          <!-- Red Glow Effect -->
+          {box.isNew && (
+            <div
+              class="w-40 h-30 blur opacity-40 absolute top-0 left-0 z-[13] pointer-events-none"
+              style="background: linear-gradient(to right bottom, rgb(255, 56, 81) 0%, rgba(0, 0, 0, 0) 50%);"
+            ></div>
+          )}
+
+          <div class="flex flex-col justify-between relative w-full h-full rounded-[inherit] p-2 cursor-pointer">
+            <!-- Box Image with Hover Animation -->
+            <div class="transition-transform duration-300 ease-in-out group-hover:-translate-y-1 group-hover:rotate-[6deg] relative flex flex-col items-center justify-center gap-2 z-[2] h-[185px] mb-[6px] mt-11">
+              <div class="relative w-full h-full">
+                <img
+                  src={box.image}
+                  alt={box.name}
+                  draggable="false"
+                  loading="lazy"
+                  decoding="async"
+                  class="absolute h-full w-full inset-0 object-contain"
+                />
+              </div>
+            </div>
+
+            <!-- Box Info Section -->
+            <div class="relative flex items-center justify-center flex-col overflow-hidden w-full min-h-[75px] h-[75px] cursor-pointer rounded-xl">
+              <div class="absolute h-full w-full">
+                <div class="flex flex-col items-center justify-center min-h-[75px] h-[75px]">
+                  <p class="text-lg font-medium text-center text-gray-300 max-w-[140px] truncate mb-2 group-hover:text-[#FF3851] transition-colors">
+                    {box.name}
+                  </p>
+
+                  <!-- Currency Display -->
+                  <div class="flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" class="text-[#FF3851]">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M4.37059 0C3.11366 0 2.09473 1.01894 2.09473 2.27586V19.7241C2.09473 20.9811 3.11366 22 4.37059 22H9.86167V19.6483C5.76512 19.269 3.69156 17.1448 3.69156 13.9333V13.7816H6.42259V14.1862C6.42259 16.2092 7.6111 17.2207 11.3283 17.2207C14.5651 17.2207 15.703 16.5126 15.703 14.9195C15.703 13.4529 14.8433 12.8965 12.6939 12.492L8.54673 11.8092C5.68926 11.3034 3.66627 9.9885 3.66627 7.20689C3.66627 4.93103 5.4111 2.62988 9.86167 2.32644V0H4.37059ZM12.3904 0V2.35172C16.3352 2.78161 18.1559 5.08276 18.1559 8.06666V8.21839H15.4502V7.88965C15.4502 5.81609 14.2111 4.77931 10.6962 4.77931C7.6111 4.77931 6.3973 5.53793 6.3973 7.05517C6.3973 8.52184 7.25707 9.0023 9.25478 9.43218L13.3766 10.1402C16.7651 10.7471 18.4341 12.2897 18.4341 14.7678C18.4341 17.1448 16.6387 19.3701 12.3904 19.6736V22H18.0258C19.2827 22 20.3016 20.9811 20.3016 19.7241V2.27586C20.3016 1.01894 19.2827 0 18.0258 0H12.3904Z" fill="currentColor"/>
+                    </svg>
+                    <span class="text-base font-semibold text-white">{box.price}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- "New" Badge -->
+            {box.isNew && (
+              <div class="absolute top-3 left-3 flex justify-center items-center gap-2.5 p-2 w-auto h-[28px] rounded-md bg-[#FF3851] z-[100]">
+                <p class="text-white font-medium text-xs">NEW</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

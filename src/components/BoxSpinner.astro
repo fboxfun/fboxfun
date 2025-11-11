@@ -1,0 +1,361 @@
+---
+// BoxSpinner Component - Manager Layer
+// Bridges animation logic and presentation, manages item randomization
+
+import Spinner from './Spinner.astro';
+import { generateItems } from '../utils/items';
+import type { MysteryBox, PrizeItem } from '../data/boxes';
+
+interface Props {
+  box: MysteryBox;
+  spinnerId: string;
+}
+
+const { box, spinnerId } = Astro.props;
+
+// Configuration constants
+const ITEM_COUNT = 52;
+const START_POSITION = 5;
+const FINAL_POSITION = 45;
+
+// Get prizes for this box (use defaults if not set)
+const defaultPrizes: PrizeItem[] = [
+  { id: 'default1', name: 'Prize 1', image: box.image, value: box.priceValue * 0.5, rarity: 'common', dropChance: 0.50 },
+  { id: 'default2', name: 'Prize 2', image: box.image, value: box.priceValue * 0.8, rarity: 'uncommon', dropChance: 0.30 },
+  { id: 'default3', name: 'Prize 3', image: box.image, value: box.priceValue * 1.2, rarity: 'rare', dropChance: 0.15 },
+  { id: 'default4', name: 'Prize 4', image: box.image, value: box.priceValue * 2, rarity: 'epic', dropChance: 0.04 },
+  { id: 'default5', name: 'Prize 5', image: box.image, value: box.priceValue * 5, rarity: 'legendary', dropChance: 0.01 },
+];
+
+const prizes = box.prizes || defaultPrizes;
+
+// Generate randomized initial items for display
+const initialItems: PrizeItem[] = generateItems(prizes, ITEM_COUNT, {
+  seed: Date.now(),
+  spinId: `${box.id}-initial`
+});
+---
+
+<div class="box-spinner-container" data-box-id={box.id}>
+  <!-- Spinner indicators -->
+  <div class="relative">
+    <!-- Top Arrow - Triangle pointing up with rounded corners -->
+    <div class="absolute left-1/2 top-0 transform -translate-x-1/2 z-30 -mt-1">
+      <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
+        <path d="M14 18L0 0H28L14 18Z" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    
+    <!-- Bottom Arrow - Triangle pointing down with rounded corners -->
+    <div class="absolute left-1/2 bottom-0 transform -translate-x-1/2 z-30 -mb-1">
+      <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
+        <path d="M14 0L28 18H0L14 0Z" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    
+    <!-- Spinner Component -->
+    <Spinner
+      items={initialItems}
+      startPosition={START_POSITION}
+      finalPosition={FINAL_POSITION}
+      id={spinnerId}
+    />
+  </div>
+  
+  <!-- Winner Display (Hidden initially) -->
+  <div id={`${spinnerId}-winner`} class="winner-display hidden mt-6 p-6 bg-[#0a0a0a] rounded-xl border-2 border-[#FF3851] text-center">
+    <p class="text-sm text-gray-400 mb-3">🎉 You Won!</p>
+    <div class="flex items-center justify-center gap-4">
+      <img class="winner-image w-20 h-20 rounded-lg object-contain" src="" alt="" />
+      <div class="text-left">
+        <p class="winner-name font-bold text-xl mb-1"></p>
+        <p class="winner-value text-[#FF3851] font-bold text-lg"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .box-spinner-container {
+    position: relative;
+  }
+  
+  .bg-gradient-radial {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 30%, transparent 70%);
+  }
+  
+  .winner-display {
+    animation: fadeInScale 0.5s ease-out;
+  }
+  
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+</style>
+
+<script>
+  import { generateItems } from '../utils/items';
+  import type { PrizeItem } from '../data/boxes';
+  
+  // BoxSpinner controller
+  class BoxSpinnerController {
+    private spinnerId: string;
+    private boxId: string;
+    private prizes: PrizeItem[];
+    private isSpinning: boolean = false;
+    private spinIdCounter: number = 0;
+    
+    constructor(spinnerId: string, boxId: string, prizes: PrizeItem[]) {
+      this.spinnerId = spinnerId;
+      this.boxId = boxId;
+      this.prizes = prizes;
+    }
+    
+    /**
+     * Select random winner from prizes based on drop chances
+     */
+    private selectWinner(): PrizeItem {
+      const totalChance = this.prizes.reduce((sum, p) => sum + p.dropChance, 0);
+      let random = Math.random() * totalChance;
+      
+      for (const prize of this.prizes) {
+        random -= prize.dropChance;
+        if (random <= 0) {
+          return prize;
+        }
+      }
+      
+      return this.prizes[this.prizes.length - 1];
+    }
+    
+    /**
+     * Generate randomized items for spinner
+     */
+    private generateSpinnerItems(winner: PrizeItem): PrizeItem[] {
+      const seed = Date.now() + this.spinIdCounter;
+      this.spinIdCounter++;
+      
+      return generateItems(this.prizes, 52, {
+        result: winner,
+        finalPosition: 45,
+        seed,
+        spinId: `${this.boxId}-${this.spinIdCounter}`
+      });
+    }
+    
+    /**
+     * Update spinner items in DOM
+     */
+    private updateSpinnerItems(items: PrizeItem[]): void {
+      const track = document.getElementById(this.spinnerId);
+      if (!track) return;
+      
+      const wrappers = track.querySelectorAll('.spinner-item-wrapper');
+      
+      items.forEach((item, index) => {
+        if (wrappers[index]) {
+          const wrapper = wrappers[index] as HTMLElement;
+          const spinnerItem = wrapper.querySelector('.spinner-item');
+          
+          if (spinnerItem) {
+            // Update item data
+            spinnerItem.setAttribute('data-item-id', item.id);
+            spinnerItem.setAttribute('data-rarity', item.rarity);
+            
+            // Update image
+            const img = spinnerItem.querySelector('img');
+            if (img) {
+              img.src = item.image;
+              img.alt = item.name;
+            }
+            
+            // Update name
+            const name = spinnerItem.querySelector('p.text-sm');
+            if (name) {
+              name.textContent = item.name;
+              name.setAttribute('title', item.name);
+            }
+            
+            // Update value
+            const value = spinnerItem.querySelector('p.text-lg');
+            if (value) {
+              value.textContent = `$${item.value.toFixed(2)}`;
+            }
+          }
+        }
+      });
+    }
+    
+    /**
+     * Show winner display
+     */
+    private showWinner(winner: PrizeItem): void {
+      const winnerDisplay = document.getElementById(`${this.spinnerId}-winner`);
+      if (!winnerDisplay) return;
+      
+      const img = winnerDisplay.querySelector('.winner-image') as HTMLImageElement;
+      const name = winnerDisplay.querySelector('.winner-name');
+      const value = winnerDisplay.querySelector('.winner-value');
+      
+      if (img) img.src = winner.image;
+      if (img) img.alt = winner.name;
+      if (name) name.textContent = winner.name;
+      if (value) value.textContent = `$${winner.value.toFixed(2)}`;
+      
+      winnerDisplay.classList.remove('hidden');
+    }
+    
+    /**
+     * Hide winner display
+     */
+    private hideWinner(): void {
+      const winnerDisplay = document.getElementById(`${this.spinnerId}-winner`);
+      if (winnerDisplay) {
+        winnerDisplay.classList.add('hidden');
+      }
+    }
+    
+    /**
+     * Start spin
+     */
+    async spin(isDemo: boolean = false, isFastForward: boolean = false): Promise<PrizeItem | null> {
+      console.log('🎮 BoxSpinnerController.spin called:', { isDemo, isFastForward, isSpinning: this.isSpinning });
+      
+      if (this.isSpinning) {
+        console.warn('⚠️ Already spinning');
+        return null;
+      }
+      
+      this.isSpinning = true;
+      this.hideWinner();
+      
+      // Reset spinner state before starting new spin
+      const track = document.getElementById(this.spinnerId);
+      if (track) {
+        // Remove previous state classes
+        track.classList.remove('animating', 'stopping');
+        
+        // Clear all winner and active classes
+        const items = track.querySelectorAll('.spinner-item');
+        items.forEach(item => {
+          item.classList.remove('active', 'winner');
+        });
+      }
+      
+      // Select winner
+      const winner = this.selectWinner();
+      console.log('🎯 Winner selected:', winner.name, `($${winner.value})`);
+      
+      // Generate randomized items
+      const spinnerItems = this.generateSpinnerItems(winner);
+      console.log('🎲 Generated', spinnerItems.length, 'spinner items');
+      
+      // Update DOM with new items
+      this.updateSpinnerItems(spinnerItems);
+      console.log('✅ Updated spinner items in DOM');
+      
+      // Reset animation state
+      const animation = (track as any).__spinnerAnimation;
+      if (animation) {
+        animation.reset();
+        console.log('🔄 Animation state reset');
+      }
+      
+      // Check if animation function exists
+      if (typeof (window as any).startSpinnerAnimation !== 'function') {
+        console.error('❌ startSpinnerAnimation function not found on window');
+        this.isSpinning = false;
+        return null;
+      }
+      
+      // Start animation
+      const duration = isFastForward ? 2000 : 8000;
+      console.log('🎬 Starting animation with duration:', duration);
+      (window as any).startSpinnerAnimation(this.spinnerId, duration, isFastForward);
+      
+      // Wait for animation to complete
+      console.log('⏱️ Waiting for animation to complete...');
+      await new Promise(resolve => setTimeout(resolve, duration + 500));
+      
+      // Show winner (unless demo)
+      if (!isDemo) {
+        console.log('🎉 Showing winner display');
+        this.showWinner(winner);
+      } else {
+        console.log('🎮 Demo mode - winner stays displayed on spinner');
+      }
+      
+      // Don't auto-reset - let the winner stay visible
+      this.isSpinning = false;
+      
+      return winner;
+    }
+    
+    /**
+     * Reset spinner
+     */
+    reset(): void {
+      (window as any).resetSpinnerAnimation(this.spinnerId);
+      this.hideWinner();
+      this.isSpinning = false;
+      console.log('🔄 Spinner reset');
+    }
+    
+    /**
+     * Check if currently spinning
+     */
+    isActive(): boolean {
+      return this.isSpinning;
+    }
+  }
+  
+  // Initialize all box spinners
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎰 BoxSpinner: DOMContentLoaded fired');
+    const containers = document.querySelectorAll('.box-spinner-container');
+    console.log('🎰 BoxSpinner: Found', containers.length, 'containers');
+    
+    containers.forEach((container) => {
+      const htmlContainer = container as HTMLElement;
+      const boxId = htmlContainer.dataset.boxId;
+      console.log('🎰 BoxSpinner: Processing container for boxId:', boxId);
+      
+      // Find spinner inside
+      const spinner = htmlContainer.querySelector('.spinner-track') as HTMLElement;
+      if (!spinner) {
+        console.error('❌ BoxSpinner: No .spinner-track found in container');
+        return;
+      }
+      if (!boxId) {
+        console.error('❌ BoxSpinner: No boxId in container');
+        return;
+      }
+      
+      const spinnerId = spinner.id;
+      console.log('🎰 BoxSpinner: Found spinner with id:', spinnerId);
+      
+      // Get prizes from page data (we'll inject this)
+      const prizesData = (window as any)[`${boxId}_prizes`] || [];
+      console.log('🎰 BoxSpinner: Prizes data:', prizesData.length, 'items');
+      
+      if (prizesData.length === 0) {
+        console.warn('⚠️ BoxSpinner: No prizes data found for boxId:', boxId);
+      }
+      
+      // Create controller
+      const controller = new BoxSpinnerController(spinnerId, boxId, prizesData);
+      
+      // Store on window for external access
+      (window as any)[`spinner_${spinnerId}`] = controller;
+      
+      console.log(`✅ BoxSpinner ${spinnerId} initialized and stored at window.spinner_${spinnerId}`);
+    });
+  });
+</script>

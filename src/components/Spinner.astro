@@ -1,0 +1,296 @@
+---
+// Spinner Component - Animation Container
+// Handles Framer Motion animation orchestration and transform calculations
+
+import SpinnerItem from './SpinnerItem.astro';
+import type { PrizeItem } from '../data/boxes';
+
+interface Props {
+  items: PrizeItem[];
+  startPosition: number;
+  finalPosition: number;
+  orientation?: 'horizontal' | 'vertical';
+  id: string;
+}
+
+const {
+  items,
+  startPosition = 5,
+  finalPosition = 45,
+  orientation = 'horizontal',
+  id
+} = Astro.props;
+
+const itemCount = items.length;
+
+// Store item indices for start and final positions (not percentages)
+const startPositionIndex = startPosition;
+const finalPositionIndex = finalPosition;
+---
+
+<div class="spinner-container relative overflow-hidden">
+  <!-- Animation track -->
+  <div
+    id={id}
+    class:list={[
+      'spinner-track absolute top-0 left-0 h-full flex items-center',
+      orientation === 'horizontal' ? 'flex-row' : 'flex-col'
+    ]}
+    data-item-count={itemCount}
+    data-start-position={startPositionIndex}
+    data-final-position={finalPositionIndex}
+    style={{
+      willChange: 'transform',
+      contain: 'layout style paint',
+      transform: 'translateZ(0)',
+      gap: '1rem'
+    }}
+  >
+    {items.map((item, index) => (
+      <div data-index={index} class="spinner-item-wrapper">
+        <SpinnerItem item={item} />
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .spinner-container {
+    height: 437.5px;
+    max-width: 1400px;
+    margin: 0 auto;
+    border-radius: 1rem;
+    background: radial-gradient(ellipse at center, rgba(30, 30, 30, 0.8) 0%, rgba(10, 10, 10, 0.95) 70%, rgba(0, 0, 0, 1) 100%);
+    border: 2px solid #2a2a2a;
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+  }
+  
+  .spinner-track {
+    transition: none;
+  }
+  
+  /* Animation states */
+  .spinner-track.animating {
+    transition: transform var(--spin-duration, 8s) cubic-bezier(0, 0.9, 0.6, 1);
+  }
+  
+  .spinner-track.stopping {
+    transition: none !important;
+  }
+  
+  /* GPU acceleration */
+  .spinner-track,
+  .spinner-item-wrapper {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+</style>
+
+<script>
+  import { SpinnerAnimation, calculateAnimationPositions } from '../scripts/useSpinnerAnimation';
+  
+  // Initialize spinners on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    const spinnerTracks = document.querySelectorAll('.spinner-track');
+    
+    spinnerTracks.forEach((track) => {
+      const htmlTrack = track as HTMLElement;
+      const itemCount = parseInt(htmlTrack.dataset.itemCount || '52', 10);
+      const spinnerId = htmlTrack.id;
+      
+      // Create animation instance
+      const animation = new SpinnerAnimation(itemCount);
+      
+      // Store on element for external access
+      (htmlTrack as any).__spinnerAnimation = animation;
+      
+      // Subscribe to state changes
+      animation.subscribe((state) => {
+        // Calculate which item is actually at the center of the viewport
+        const containerRect = htmlTrack.parentElement?.getBoundingClientRect();
+        if (!containerRect) return;
+        
+        const centerX = containerRect.left + containerRect.width / 2;
+        const items = htmlTrack.querySelectorAll('.spinner-item-wrapper');
+        
+        let closestItem = 0;
+        let closestDistance = Infinity;
+        
+        items.forEach((item, index) => {
+          const itemRect = item.getBoundingClientRect();
+          const itemCenterX = itemRect.left + itemRect.width / 2;
+          const distance = Math.abs(centerX - itemCenterX);
+          
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestItem = index;
+          }
+        });
+        
+        // Update active state for the closest item to center
+        items.forEach((item, index) => {
+          const spinnerItem = item.querySelector('.spinner-item');
+          if (spinnerItem) {
+            if (index === closestItem) {
+              spinnerItem.classList.add('active');
+            } else {
+              spinnerItem.classList.remove('active');
+            }
+          }
+        });
+      });
+      
+      console.log(`🎰 Spinner ${spinnerId} initialized with ${itemCount} items`);
+    });
+  });
+  
+  // Export helper functions for external control
+  (window as any).startSpinnerAnimation = (
+    spinnerId: string,
+    duration: number = 8000,
+    isFastForward: boolean = false
+  ) => {
+    const track = document.getElementById(spinnerId) as HTMLElement;
+    if (!track) return;
+    
+    const animation = (track as any).__spinnerAnimation as SpinnerAnimation;
+    if (!animation) return;
+    
+    const container = track.parentElement;
+    if (!container) return;
+    
+    // Calculate pixel-based positions to center specific items
+    const items = track.querySelectorAll('.spinner-item-wrapper');
+    if (items.length === 0) return;
+    
+    const firstItem = items[0] as HTMLElement;
+    const itemWidth = firstItem.offsetWidth;
+    const gap = 16; // 1rem = 16px
+    const itemPitch = itemWidth + gap; // Distance between item centers
+    
+    const containerWidth = container.offsetWidth;
+    const containerCenter = containerWidth / 2;
+    
+    // Calculate positions - we want to move the track so item N is at container center
+    // startPosition and finalPosition are item indices from data attributes
+    const startIndex = parseInt(track.dataset.startPosition || '5', 10);
+    const finalIndex = parseInt(track.dataset.finalPosition || '45', 10);
+    
+    // Position to center item: containerCenter - (itemIndex * itemPitch + itemWidth/2)
+    const startPos = containerCenter - (startIndex * itemPitch + itemWidth / 2);
+    const finalPos = containerCenter - (finalIndex * itemPitch + itemWidth / 2);
+    
+    console.log('🎯 Animation positions:', { startIndex, finalIndex, startPos, finalPos, itemPitch });
+    
+    // Reset track position to start without animation
+    track.classList.remove('animating', 'stopping');
+    track.style.transition = 'none';
+    track.style.transform = `translateX(${startPos}px)`;
+    
+    // Force reflow to apply the instant position change
+    void track.offsetWidth;
+    
+    // Start animation
+    animation.start();
+    track.classList.add('animating');
+    track.style.transition = '';  // Re-enable transition
+    track.style.setProperty('--spin-duration', `${duration}ms`);
+    
+    // Animate to final position
+    requestAnimationFrame(() => {
+      track.style.transform = `translateX(${finalPos}px)`;
+    });
+    
+    // Handle transform updates during animation
+    const updateInterval = setInterval(() => {
+      const computedStyle = window.getComputedStyle(track);
+      const transform = computedStyle.transform;
+      
+      if (transform && transform !== 'none') {
+        // Extract translateX value and convert to percentage
+        const matrix = new DOMMatrix(transform);
+        const translateX = matrix.m41;
+        const trackWidth = track.scrollWidth;
+        const percentage = (translateX / trackWidth) * 100;
+        
+        animation.handleTransformChange(`${percentage}%`);
+      }
+    }, 16); // ~60fps
+    
+    // Complete animation
+    setTimeout(() => {
+      clearInterval(updateInterval);
+      
+      // Get the current computed transform and lock it in place
+      const computedStyle = window.getComputedStyle(track);
+      const currentTransform = computedStyle.transform;
+      
+      // Remove animating class and disable transition
+      track.classList.remove('animating');
+      track.classList.add('stopping');
+      
+      // Lock the transform to prevent any movement
+      if (currentTransform && currentTransform !== 'none') {
+        const matrix = new DOMMatrix(currentTransform);
+        const translateX = matrix.m41;
+        track.style.transform = `translateX(${translateX}px)`;
+      }
+      
+      animation.complete();
+      
+      // Find the item at the center of the viewport
+      const containerRect = track.parentElement?.getBoundingClientRect();
+      if (!containerRect) return;
+      
+      const centerX = containerRect.left + containerRect.width / 2;
+      const items = track.querySelectorAll('.spinner-item-wrapper');
+      
+      let closestItem = 0;
+      let closestDistance = Infinity;
+      
+      items.forEach((item, index) => {
+        const itemRect = item.getBoundingClientRect();
+        const itemCenterX = itemRect.left + itemRect.width / 2;
+        const distance = Math.abs(centerX - itemCenterX);
+        
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestItem = index;
+        }
+      });
+      
+      // Mark winner item with special class
+      items.forEach((item, index) => {
+        const spinnerItem = item.querySelector('.spinner-item');
+        if (spinnerItem) {
+          spinnerItem.classList.remove('active');
+          if (index === closestItem) {
+            spinnerItem.classList.add('winner');
+          }
+        }
+      });
+      
+      console.log('🎉 Spinner animation completed, winner at index:', closestItem);
+    }, duration);
+  };
+  
+  (window as any).resetSpinnerAnimation = (spinnerId: string) => {
+    const track = document.getElementById(spinnerId) as HTMLElement;
+    if (!track) return;
+    
+    const animation = (track as any).__spinnerAnimation as SpinnerAnimation;
+    if (!animation) return;
+    
+    track.classList.remove('animating', 'stopping');
+    track.style.transform = 'translateX(0)';
+    animation.reset();
+    
+    // Clear all active and winner classes
+    const items = track.querySelectorAll('.spinner-item');
+    items.forEach(item => {
+      item.classList.remove('active', 'winner');
+    });
+    
+    console.log('🔄 Spinner animation reset');
+  };
+</script>
