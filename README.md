@@ -137,7 +137,7 @@ This is a static site - the build output in `dist/` can be deployed to:
 
 ## Environment
 
-- **Site URL**: Configured in `astro.config.mjs` as `https://fortunebox.com`
+- **Site URL**: Configured in `astro.config.mjs` as `https://fortunebox.fun`
 - **Build**: HTML compression enabled, auto-inlined stylesheets
 - **SSG**: Static site generation (no server-side rendering)
 

@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://fortunebox.com',
+  site: 'https://fortunebox.fun',
   vite: {
     plugins: [tailwindcss()]
   },
