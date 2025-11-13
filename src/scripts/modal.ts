@@ -201,9 +201,7 @@ function initModals() {
     // Get form data
     const formData = new FormData(e.target as HTMLFormElement);
     const userData = {
-      name: formData.get("name"),
       email: formData.get("email"),
-      phone: formData.get("phone"),
       submittedAt: new Date().toISOString(),
     };
 
