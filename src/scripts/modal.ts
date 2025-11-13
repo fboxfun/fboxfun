@@ -28,6 +28,22 @@ function initModals() {
   const signinContent = document.getElementById("signin-content");
   const signupContent = document.getElementById("signup-content");
 
+  const COCO_TREASURE_SLUG = "cocos-treasure";
+  const LEGACY_COCO_TREASURE_SLUG = "coco's-treasure";
+
+  const normalizeBoxSlug = (slug: string | null): string => {
+    if (!slug) {
+      return COCO_TREASURE_SLUG;
+    }
+
+    if (slug === LEGACY_COCO_TREASURE_SLUG) {
+      localStorage.setItem("selectedBoxSlug", COCO_TREASURE_SLUG);
+      return COCO_TREASURE_SLUG;
+    }
+
+    return slug;
+  };
+
   // Track current active modal
   let activeModal: HTMLElement | null = null;
   let selectedBoxSlug: string | null = null;
@@ -87,14 +103,15 @@ function initModals() {
   ctaBtn?.addEventListener("click", () => {
     // If user already submitted, go directly to box page
     if (hasSubmittedForm) {
-      const boxSlug =
-        localStorage.getItem("selectedBoxSlug") || "cocos-treasure";
+      const boxSlug = normalizeBoxSlug(
+        localStorage.getItem("selectedBoxSlug")
+      );
       window.location.href = `/box/${boxSlug}`;
       return;
     }
 
     // Set default box slug for hero CTA
-    selectedBoxSlug = "cocos-treasure";
+    selectedBoxSlug = COCO_TREASURE_SLUG;
     localStorage.setItem("selectedBoxSlug", selectedBoxSlug);
 
     if (contactModal) {
@@ -111,14 +128,15 @@ function initModals() {
       // Get the box slug from the card's data-box-slug attribute
       const boxSlug = card.getAttribute("data-box-slug");
       if (boxSlug) {
-        selectedBoxSlug = boxSlug;
+        selectedBoxSlug = normalizeBoxSlug(boxSlug);
         // Store in localStorage
         localStorage.setItem("selectedBoxSlug", selectedBoxSlug);
       }
 
       // If user already submitted, go directly to box page
       if (hasSubmittedForm) {
-        window.location.href = `/box/${boxSlug}`;
+        const normalizedSlug = normalizeBoxSlug(boxSlug);
+        window.location.href = `/box/${normalizedSlug}`;
         return;
       }
 
@@ -215,7 +233,9 @@ function initModals() {
     }
 
     // Get the selected box slug
-    const boxSlug = localStorage.getItem("selectedBoxSlug") || "cocos-treasure";
+    const boxSlug = normalizeBoxSlug(
+      localStorage.getItem("selectedBoxSlug")
+    );
 
     // Redirect to box page
     window.location.href = `/box/${boxSlug}`;
