@@ -198,7 +198,7 @@ export const mysteryBoxes: MysteryBox[] = [
     price: "$329.00",
     priceValue: 329.0,
     image: "/boxes/cocos-treasure.avif",
-    slug: "coco's-treasure",
+    slug: "cocos-treasure",
     isNew: true,
     prizes: premiumPrizes,
   },
